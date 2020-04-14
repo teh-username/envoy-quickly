@@ -20,7 +20,7 @@ The goal is for the services to be able to talk to each other by routing each re
 
 without explicitly adding each service as a cluster in our Envoy configuration.
 
-We can achieve this by configuring our single cluster as follows:
+We can achieve this by configuring our upstream cluster as follows:
 
 ```
 clusters:
