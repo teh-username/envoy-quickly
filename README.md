@@ -2,6 +2,8 @@
 
 A PoC on Envoy sidecars without a control plane for fast observability. Tested with [Envoy v1.14.1](https://github.com/envoyproxy/envoy/releases/tag/v1.14.1) and [k3s v1.17.4+k3s1](https://github.com/rancher/k3s/releases/tag/v1.17.4%2Bk3s1)
 
+Adventure starts [here](./stage-1)
+
 ## Why
 
 You are asked to setup dashboards for backend observability (golden signals, etc.) for the first time with the following constraints:
