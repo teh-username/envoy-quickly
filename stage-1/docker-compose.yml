@@ -1,0 +1,14 @@
+version: '3'
+services:
+  proxy:
+    build: ./proxy
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./proxy/envoy.yaml:/etc/envoy.yaml
+  service-a:
+    build: ./service-a
+  service-b:
+    build: ./service-b
+  service-c:
+    build: ./service-c
