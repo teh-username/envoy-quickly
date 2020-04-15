@@ -21,19 +21,15 @@ Let's attach Envoy as a sidecar to our 2 services, but proxying only egress traf
 As illustrated above, all egress traffic will be routed to Envoy (via iptables) and Envoy will take care of the rest. All ingress traffic, however, will still be directly handled by the service.
 
 ### Envoy configuration
-
+#### Egress
+* Cluster `proxy_cluster` set as a dynamic forward proxy
 * Listener on `127.0.0.1:9001` as egress
-* Egress is configured to use the `proxy_cluster` as the upstream cluster
-* `proxy_cluster` is a dynamic forward proxy
+* Egress is configured to use the `proxy_cluster` as its upstream cluster
 
 ### Verification
 
-To verify the setup:
-
 ```
-kubectl apply -f manifests/0-envoy-config.yaml
-kubectl apply -f manifests/1-service-a.yaml
-kubectl apply -f manifests/1-service-b.yaml
+kubectl apply -f manifests/
 
 # Optional
 kubectl apply -f prom/2-prom-crds.yaml
