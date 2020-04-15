@@ -31,13 +31,13 @@ As illustrated above, all egress traffic will be routed to Envoy (via iptables) 
 To verify the setup:
 
 ```
-kubectl apply -f 0-envoy-config.yaml
-kubectl apply -f 1-service-a.yaml
-kubectl apply -f 1-service-b.yaml
+kubectl apply -f manifests/0-envoy-config.yaml
+kubectl apply -f manifests/1-service-a.yaml
+kubectl apply -f manifests/1-service-b.yaml
 
 # Optional
-kubectl apply -f 2-prom-crds.yaml
-kubectl apply -f 2-prom-instance.yaml
+kubectl apply -f prom/2-prom-crds.yaml
+kubectl apply -f prom/2-prom-instance.yaml
 ```
 
 We then exec into one of the services and run `curl` a few times:
@@ -71,6 +71,7 @@ increase(envoy_dns_cache_proxy_dns_cache_host_added[1m])
 
 ```
 kubectl delete -f manifests/
+kubectl delete -f prom/
 kubectl delete crd prometheusrules.monitoring.coreos.com
 kubectl delete crd podmonitors.monitoring.coreos.com
 kubectl delete crd alertmanagers.monitoring.coreos.com
