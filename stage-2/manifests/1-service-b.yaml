@@ -1,0 +1,61 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: service-b
+  labels:
+    app: service-b
+    app.envoy/enabled: "true"
+spec:
+  selector:
+    app: service-b
+  ports:
+  - port: 8080
+    name: web
+  - port: 8001
+    name: stats
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: service-b
+  labels:
+    app: service-b
+spec:
+  initContainers:
+    - name: proxy-init
+      image: tehusername/proxy-init:1.2
+      env:
+        - name: GID
+          value: "1337"
+        - name: UID
+          value: "1337"
+        - name: PROXY_PORT
+          value: "9001"
+      securityContext:
+        capabilities:
+          add: ["NET_ADMIN"]
+        privileged: true
+  containers:
+    - name: service
+      image: tehusername/sample-service:1.1
+      env:
+        - name: SVC_NAME
+          value: "service-b"
+    - name: proxy
+      image: envoyproxy/envoy:v1.14.1
+      securityContext:
+        runAsUser: 1337
+      command: ['/usr/local/bin/envoy']
+      args: ['-c', '/etc/envoy/envoy.yaml']
+      ports:
+        - containerPort: 9001
+          name: egress
+        - containerPort: 8001
+          name: stats
+      volumeMounts:
+        - name: envoy-config
+          mountPath: /etc/envoy
+  volumes:
+    - name: envoy-config
+      configMap:
+        name: envoy-config
