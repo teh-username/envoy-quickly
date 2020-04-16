@@ -10,6 +10,8 @@ In this stage, Envoy will now be handling both ingress and egress traffic of the
 +-----------------------+        +-----------------------+
 ```
 
+No matter how many new services we deploy, our Envoy configuration need not change. This effectively removes the control plane out of the picture.
+
 ### Envoy Configuration
 
 #### Ingress
