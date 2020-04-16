@@ -1,8 +1,12 @@
 # Envoy, quickly!
 
-A PoC on Envoy sidecars without a control plane for fast observability. Tested with [Envoy v1.14.1](https://github.com/envoyproxy/envoy/releases/tag/v1.14.1) and [k3s v1.17.4+k3s1](https://github.com/rancher/k3s/releases/tag/v1.17.4%2Bk3s1)
+![Tragedy of Darth Plagueis the Wise](stage-4/demo.gif)
 
-Adventure starts [here](./stage-1)
+A PoC on injecting Envoy sidecars without a control plane for fast observability. Tested with [Envoy v1.14.1](https://github.com/envoyproxy/envoy/releases/tag/v1.14.1) and [k3s v1.17.4+k3s1](https://github.com/rancher/k3s/releases/tag/v1.17.4%2Bk3s1)
+
+See how it was built: [stage 1](./stage-1), [stage 2](./stage-2), [stage 3](./stage-3)
+
+See it in action: [stage 4](./stage-4)
 
 ## Why
 
@@ -21,10 +25,6 @@ How?
 
 ## Solution
 
-We deploy Envoy as a sidecar but configured only to be a forward proxy. We retain the business-as-usual flow of traffic by not doing anything fancy but we get metrics out of thin air.
+We use Envoy as a [forward proxy](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_proxy#arch-overview-http-dynamic-forward-proxy). Ingress and egress will still be routed to Envoy (via iptables) but there's no need to update the config should a new service be introduced.
 
 Bonus feature: Tracing can also be achieved provided our application isn't too aggresive with dropping unfamiliar headers.
-
-## Code Organization
-
-The PoC is built in multiple stages, with each being a standalone set to verify whether particular features are feasible.
