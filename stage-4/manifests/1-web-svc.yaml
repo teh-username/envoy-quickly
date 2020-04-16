@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: web
+  namespace: emojivoto
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/proxy: envoy
+  name: web-svc
+  namespace: emojivoto
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  - name: stats
+    port: 8001
+  selector:
+    app: web-svc
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/part-of: emojivoto
+    app.kubernetes.io/version: v9
+  name: web
+  namespace: emojivoto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-svc
+  template:
+    metadata:
+      labels:
+        app: web-svc
+    spec:
+      initContainers:
+        - name: proxy-init
+          image: tehusername/proxy-init:1.4
+          env:
+            - name: SERVICE_PORTS
+              value: "8080"
+            - name: GID
+              value: "1337"
+            - name: UID
+              value: "1337"
+            - name: PROXY_EGRESS_PORT
+              value: "9001"
+            - name: PROXY_INGRESS_PORT
+              value: "9211"
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
+            privileged: true
+      containers:
+      - env:
+        - name: WEB_PORT
+          value: "8080"
+        - name: EMOJISVC_HOST
+          value: emoji-svc.emojivoto:8080
+        - name: VOTINGSVC_HOST
+          value: voting-svc.emojivoto:8080
+        - name: INDEX_BUNDLE
+          value: dist/index_bundle.js
+        image: buoyantio/emojivoto-web:v9
+        name: web-svc
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            cpu: 100m
+      - name: proxy
+        image: envoyproxy/envoy:v1.14.1
+        securityContext:
+          runAsUser: 1337
+        command: ['/usr/local/bin/envoy']
+        args: ['-c', '/etc/envoy/envoy.yaml']
+        ports:
+          - containerPort: 9211
+            name: ingress
+          - containerPort: 9001
+            name: egress
+          - containerPort: 8001
+            name: stats
+        volumeMounts:
+          - name: envoy-config
+            mountPath: /etc/envoy
+      serviceAccountName: web
+      volumes:
+        - name: envoy-config
+          configMap:
+            name: web-envoy-config

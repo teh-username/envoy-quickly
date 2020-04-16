@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: voting
+  namespace: emojivoto
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/proxy: envoy
+  name: voting-svc
+  namespace: emojivoto
+spec:
+  ports:
+  - name: grpc
+    port: 8080
+    targetPort: 8080
+  - name: prom
+    port: 8801
+    targetPort: 8801
+  - name: stats
+    port: 8001
+  selector:
+    app: voting-svc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: voting
+    app.kubernetes.io/part-of: emojivoto
+    app.kubernetes.io/version: v9
+  name: voting
+  namespace: emojivoto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voting-svc
+  template:
+    metadata:
+      labels:
+        app: voting-svc
+    spec:
+      initContainers:
+        - name: proxy-init
+          image: tehusername/proxy-init:1.4
+          env:
+            - name: SERVICE_PORTS
+              value: "8080"
+            - name: GID
+              value: "1337"
+            - name: UID
+              value: "1337"
+            - name: PROXY_EGRESS_PORT
+              value: "9001"
+            - name: PROXY_INGRESS_PORT
+              value: "9211"
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
+            privileged: true
+      containers:
+      - env:
+        - name: GRPC_PORT
+          value: "8080"
+        - name: PROM_PORT
+          value: "8801"
+        image: buoyantio/emojivoto-voting-svc:v9
+        name: voting-svc
+        ports:
+        - containerPort: 8080
+          name: grpc
+        - containerPort: 8801
+          name: prom
+        resources:
+          requests:
+            cpu: 100m
+      - name: proxy
+        image: envoyproxy/envoy:v1.14.1
+        securityContext:
+          runAsUser: 1337
+        command: ['/usr/local/bin/envoy']
+        args: ['-c', '/etc/envoy/envoy.yaml']
+        ports:
+          - containerPort: 9211
+            name: ingress
+          - containerPort: 9001
+            name: egress
+          - containerPort: 8001
+            name: stats
+        volumeMounts:
+          - name: envoy-config
+            mountPath: /etc/envoy
+      serviceAccountName: voting
+      volumes:
+        - name: envoy-config
+          configMap:
+            name: envoy-config
