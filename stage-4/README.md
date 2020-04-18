@@ -25,32 +25,25 @@ Once fully deployed, our application should look like:
 No control plane!
 
 ### Envoy Configuration
+#### Ingress
+* Cluster
+  * `grpc_local_service` pointed at `127.0.0.1:8080`, uses HTTP/2 (GRPC)
+  * `rest_local_service` pointed at `127.0.0.1:8080`, defaults to HTTP/1.x
 
-#### web-svc config (web-envoy-config)
-##### Ingress
-* Cluster `local_service` pointed at `127.0.0.1:8080`
-* Listener on `0.0.0.0:9211` as ingress
-* Ingress is configured to use `local_service` as its upstream cluster
+* Listener
+  * `0.0.0.0:9211` as ingress with the following routes:
+    * `grpc_route` (if "application/grpc") routes to `grpc_local_service`
+    * `rest_route` (default route) routes to `rest_local_service`
 
-##### Egress
-* Cluster `proxy_cluster` set as a dynamic forward proxy, uses HTTP/2 (GRPC)
-* Listener on `127.0.0.1:9001` as egress
-* Egress is configured to use the `proxy_cluster` as its upstream cluster
+#### Egress
+* Cluster
+  * `grpc_proxy_cluster` set as a dynamic forward proxy, uses HTTP/2 (GRPC)
+  * `rest_proxy_cluster` set as a dynamic forward proxy, defaults to HTTP/1.x
 
-#### vote-bot, voting-svc and emoji-svc config (envoy-config)
-##### Ingress
-* Cluster `local_service` pointed at `127.0.0.1:8080`, uses HTTP/2 (GRPC)
-* Listener on `0.0.0.0:9211` as ingress
-* Ingress is configured to use `local_service` as its upstream cluster
-
-_Note: vote-bot has no ingress so we can leave the HTTP/2 support as is without any impact_
-
-##### Egress
-* Cluster `proxy_cluster` set as a dynamic forward proxy
-* Listener on `127.0.0.1:9001` as egress
-* Egress is configured to use the `proxy_cluster` as its upstream cluster
-
-_Note: voting-svc and emoji-svc doesn't talk to each other so we don't have to set HTTP/2 at egress_
+* Listener
+  * `127.0.0.1:9001` as egress with the following routes:
+    * `grpc_route` (if "application/grpc") routes to `grpc_proxy_cluster`
+    * `rest_route` (default route) routes to `rest_proxy_cluster`
 
 ### Verification
 
@@ -73,7 +66,8 @@ kubectl apply -f prom/2-prom-instance.yaml
 Access to Prometheus is exposed via NodePort on 30900. Try querying for the following:
 
 ```
-increase(envoy_cluster_external_upstream_rq_xx{envoy_cluster_name="proxy_cluster"}[1m])
+increase(envoy_cluster_external_upstream_rq_xx{envoy_cluster_name="grpc_cluster"}[1m])
+increase(envoy_cluster_external_upstream_rq_xx{envoy_cluster_name="rest_cluster"}[1m])
 
   sum(rate(envoy_http_downstream_rq_time_bucket{envoy_http_conn_manager_prefix="egress_http", le="1", service="web-svc"}[2m])) by (job)
 /
@@ -94,5 +88,6 @@ kubectl delete crd thanosrulers.monitoring.coreos.com
 
 References:
 
+* https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
 * https://github.com/BuoyantIO/emojivoto
 * https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/

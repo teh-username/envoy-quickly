@@ -97,4 +97,4 @@ spec:
       volumes:
         - name: envoy-config
           configMap:
-            name: web-envoy-config
+            name: envoy-config
